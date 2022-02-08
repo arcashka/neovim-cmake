@@ -48,8 +48,13 @@ function ProjectConfig:get_build_dir()
     return self.build_dir
   end
 
+  local cwd = vim.loop.cwd()
+  local cwd_splitted = Path:new(vim.loop.cwd()):_split()
+  for k, v in ipairs(cwd_splitted) do rightmost_dir_in_cwd = v end
+
   self.build_dir = config.build_dir
-  self.build_dir = self.build_dir:gsub('{cwd}', vim.loop.cwd())
+  self.build_dir = self.build_dir:gsub('{cwd}', cwd)
+  self.build_dir = self.build_dir:gsub('{project_name}', rightmost_dir_in_cwd)
   self.build_dir = self.build_dir:gsub('{os}', os)
   self.build_dir = self.build_dir:gsub('{build_type}', self.json.build_type:lower())
   self.build_dir = Path:new(self.build_dir)
