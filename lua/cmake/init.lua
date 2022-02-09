@@ -196,30 +196,38 @@ function cmake.select_target()
     return
   end
 
+  local format_target_name = function(target)
+    local target_info = project_config:get_target_info(target)
+    local target_name = target_info['name']
+    return target_name .. ' (' .. target_info['type']:lower():gsub('_', ' ') .. ')'
+  end
+
+  local on_select = function(item, idx)
+    if not idx and not item then
+      return
+    end
+    local target_info = project_config:get_target_info(item)
+    local target = target_info['name']
+    utils.notify('Current target changed to ' .. target, vim.log.levels.INFO)
+    project_config.json.current_target = target_info['name']
+    project_config:write()
+  end
+
+  -- Remove _autogen targets and place current active target at the top of a selection
   local targets = {}
-  local display_targets = {}
   for _, target in ipairs(project_config:get_codemodel_targets()) do
     local target_info = project_config:get_target_info(target)
     local target_name = target_info['name']
     if target_name:find('_autogen') == nil then
-      local display_name = target_name .. ' (' .. target_info['type']:lower():gsub('_', ' ') .. ')'
       if target_name == project_config.json.current_target then
-        table.insert(targets, 1, target_name)
-        table.insert(display_targets, 1, display_name)
+        table.insert(targets, 1, target)
       else
-        table.insert(targets, target_name)
-        table.insert(display_targets, display_name)
+        table.insert(targets, target)
       end
     end
   end
 
-  vim.ui.select(display_targets, { prompt = 'Select target' }, function(_, idx)
-    if not idx then
-      return
-    end
-    project_config.json.current_target = targets[idx]
-    project_config:write()
-  end)
+  vim.ui.select(targets, { prompt = 'Select target', format_item = format_target_name }, on_select)
 end
 
 function cmake.create_project()
